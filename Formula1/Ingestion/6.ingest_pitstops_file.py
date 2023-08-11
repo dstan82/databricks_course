@@ -37,7 +37,7 @@ pitstops_df.describe().display()
 
 # COMMAND ----------
 
-final_df = pitstops_df.withColumnRenamed('driverId','driver_id') \
+final_pit_stops_df = pitstops_df.withColumnRenamed('driverId','driver_id') \
                       .withColumnRenamed('raceId','race_id') \
                         .withColumn('ingestion_date',current_timestamp())
 
@@ -45,11 +45,11 @@ final_df = pitstops_df.withColumnRenamed('driverId','driver_id') \
 
 # COMMAND ----------
 
-final_df.display()
+final_pit_stops_df.display()
 
 # COMMAND ----------
 
-final_df.write.mode('overwrite').parquet('/mnt/dlcoursestorage/processed/pitstops')
+final_pit_stops_df.write.mode('overwrite').parquet('/mnt/dlcoursestorage/processed/pitstops')
 
 # COMMAND ----------
 
