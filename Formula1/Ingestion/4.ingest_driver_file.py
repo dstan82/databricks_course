@@ -9,6 +9,14 @@
 
 # COMMAND ----------
 
+# MAGIC %run "../includes/configuration"
+
+# COMMAND ----------
+
+# MAGIC %run "../includes/common_functions"
+
+# COMMAND ----------
+
 #dbutils.fs.mounts()
 #dbutils.fs.ls('/mnt/dlcoursestorage/raw/')
 
@@ -34,7 +42,7 @@ drivers_schema = StructType([StructField('code',StringType(), False),\
 
 # COMMAND ----------
 
-drivers_df = spark.read.json('/mnt/dlcoursestorage/raw/drivers.json',schema=drivers_schema)
+drivers_df = spark.read.json(f'{raw_folder_path}/drivers.json',schema=drivers_schema)
 drivers_df.display()
 drivers_df.printSchema()
 
@@ -56,12 +64,12 @@ from pyspark.sql.functions import current_timestamp, concat, lit,col
 
 drivers_with_columns_df = drivers_df.withColumnRenamed('driverId', 'driver_id') \
                                 .withColumnRenamed('driverRef','driver_ref') \
-                                .withColumn('ingestion_date', current_timestamp()) \
                                 .withColumn('name',concat('name.forename',lit(' '),'name.surname'))
+drivers_with_ingestion_date = add_ingestion_date(drivers_with_columns_df)
 
 # COMMAND ----------
 
-drivers_with_columns_df.display()
+drivers_with_ingestion_date.display()
 
 # COMMAND ----------
 
@@ -73,7 +81,7 @@ drivers_with_columns_df.display()
 
 # COMMAND ----------
 
-drivers_final_df = drivers_with_columns_df.drop(col('url'))
+drivers_final_df = drivers_with_ingestion_date.drop(col('url'))
 
 # COMMAND ----------
 
@@ -82,7 +90,7 @@ drivers_final_df = drivers_with_columns_df.drop(col('url'))
 
 # COMMAND ----------
 
-drivers_final_df.write.parquet('/mnt/dlcoursestorage/processed/drivers')
+drivers_final_df.write.parquet(f'{processed_folder_path}/drivers')
 
 # COMMAND ----------
 

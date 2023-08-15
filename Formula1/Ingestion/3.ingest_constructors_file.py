@@ -4,7 +4,11 @@
 
 # COMMAND ----------
 
-from pyspark.sql.functions import current_timestamp
+# MAGIC %run "../includes/configuration"
+
+# COMMAND ----------
+
+# MAGIC %run "../includes/common_functions"
 
 # COMMAND ----------
 
@@ -13,13 +17,13 @@ constructors_schema = "constructorId INT,constructorRef STRING, name STRING, nat
 # COMMAND ----------
 
 dbutils.fs.mounts()
-dbutils.fs.ls('/mnt/dlcoursestorage/raw')
+dbutils.fs.ls(f'{raw_folder_path}')
 
 # COMMAND ----------
 
 constructor_df = spark.read \
     .schema(constructors_schema) \
-    .json('/mnt/dlcoursestorage/raw/constructors.json')
+    .json(f'{raw_folder_path}/constructors.json')
 
 # COMMAND ----------
 
@@ -37,15 +41,16 @@ constructors_drop_url_df = constructor_df.drop('url')
 
 # COMMAND ----------
 
-constructor_final_df = constructors_drop_url_df.withColumnRenamed('constructorId','constructor_id') \
+constructor_col_rename_df = constructors_drop_url_df.withColumnRenamed('constructorId','constructor_id') \
                                                .withColumnRenamed('constructorRef','constructor_ref') \
-                                               .withColumn('ingestion_date',current_timestamp())
+                                            
+constructor_final_df = add_ingestion_date(constructor_col_rename_df)
 
 # COMMAND ----------
 
-constructor_final_df.write.mode('overwrite').parquet('/mnt/dlcoursestorage/processed/constructors')
+constructor_final_df.write.mode('overwrite').parquet(f'{processed_folder_path}/constructors')
 
 # COMMAND ----------
 
-#display(dbutils.fs.ls('/mnt/dlcoursestorage/processed/constructors'))
-#spark.read.parquet('/mnt/dlcoursestorage/processed/constructors').display()
+display(dbutils.fs.ls('/mnt/dlcoursestorage/processed/constructors'))
+spark.read.parquet('/mnt/dlcoursestorage/processed/constructors').display()

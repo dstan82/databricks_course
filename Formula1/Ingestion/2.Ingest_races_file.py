@@ -4,6 +4,14 @@
 
 # COMMAND ----------
 
+# MAGIC %run "../includes/configuration"
+
+# COMMAND ----------
+
+# MAGIC %run "../includes/common_functions"
+
+# COMMAND ----------
+
 #importing functions
 from pyspark.sql.functions import *
 from pyspark.sql.types import *
@@ -12,6 +20,7 @@ from pyspark.sql.types import *
 
 # Checking mount path
 # dbutils.fs.mounts()
+raw_folder_path
 
 # COMMAND ----------
 
@@ -33,7 +42,7 @@ races_schema = StructType(fields=[StructField('raceId', IntegerType(),False),
 
 # COMMAND ----------
 
-raw_race_df = spark.read.csv('/mnt/dlcoursestorage/raw/races.csv',header=True,schema=races_schema)
+raw_race_df = spark.read.csv(f'{raw_folder_path}/races.csv',header=True,schema=races_schema)
 
 # COMMAND ----------
 
@@ -44,19 +53,14 @@ raw_race_df.printSchema()
 
 # COMMAND ----------
 
-#drop URL
-#race_selected_df = raw_race_df.select(col('raceId'), col('year'), col('round'), col('circuitId'), col('name'), col('date'), col('time'))
-#race_selected_df.display()
-
-# COMMAND ----------
-
-race_col_renamed = race_selected_df.withColumnRenamed('raceId','race_id')\
+race_col_renamed = raw_race_df.withColumnRenamed('raceId','race_id')\
                                    .withColumnRenamed('circuitId','circuit_id')\
                                    .withColumnRenamed('year','race_year')\
-                                   .withColumn('race_timestamp', to_timestamp(concat(col('date'),lit(' '),col('time')),'yyyy-MM-dd HH:mm:ss'))\
-                                   .withColumn('ingestion_date',current_timestamp())
+                                   .withColumn('race_timestamp', to_timestamp(concat(col('date'),lit(' '),col('time')),'yyyy-MM-dd HH:mm:ss'))
 
-races_final_df = race_col_renamed.drop('url', 'date', 'time')
+race_col_with_ingestion_date = add_ingestion_date(race_col_renamed)
+
+races_final_df = race_col_with_ingestion_date.drop('url', 'date', 'time')
 
 races_final_df.display()
 races_final_df.describe().display()
@@ -64,7 +68,7 @@ races_final_df.printSchema()
 
 # COMMAND ----------
 
-races_final_df.write.mode('overwrite').parquet('/mnt/dlcoursestorage/processed/races')
+races_final_df.write.mode('overwrite').parquet(f'{processed_folder_path}/races')
 
 # COMMAND ----------
 

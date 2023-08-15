@@ -4,8 +4,16 @@
 
 # COMMAND ----------
 
+# MAGIC %run "../includes/configuration"
+
+# COMMAND ----------
+
+# MAGIC %run "../includes/common_functions"
+
+# COMMAND ----------
+
 display(dbutils.fs.mounts())
-dbutils.fs.ls('/mnt/dlcoursestorage/raw')
+dbutils.fs.ls(f'{raw_folder_path}')
 
 
 
@@ -17,7 +25,6 @@ dbutils.fs.ls('/mnt/dlcoursestorage/raw')
 # COMMAND ----------
 
 from pyspark.sql.types import StructField, StructType, IntegerType, StringType, DateType, FloatType
-from pyspark.sql.functions import current_timestamp
 
 # COMMAND ----------
 
@@ -43,7 +50,7 @@ results_schema = StructType([StructField('constructorId', IntegerType(), False),
 
 # COMMAND ----------
 
-results_df = spark.read.json('/mnt/dlcoursestorage/raw/results.json',schema=results_schema)
+results_df = spark.read.json(f'{raw_folder_path}/results.json',schema=results_schema)
 results_df.display()
 
 # COMMAND ----------
@@ -62,7 +69,7 @@ results_df_drop_cols = results_df.drop('statusId')
 
 # COMMAND ----------
 
-results_final_df = results_df_drop_cols.withColumnRenamed('constructorId','constructor_id') \
+results_col_rename_df = results_df_drop_cols.withColumnRenamed('constructorId','constructor_id') \
                                           .withColumnRenamed('driverId','driver_id') \
                                           .withColumnRenamed('fastestLap','fastest_lap') \
                                           .withColumnRenamed('fastestLapTime','fastest_lap_time') \
@@ -71,7 +78,8 @@ results_final_df = results_df_drop_cols.withColumnRenamed('constructorId','const
                                           .withColumnRenamed('positionText','position_text') \
                                           .withColumnRenamed('raceId','race_id') \
                                           .withColumnRenamed('resultId','result_id') \
-                                          .withColumn('ingestion_date', current_timestamp())
+
+results_final_df = add_ingestion_date(results_col_rename_df)                                          
 
 # COMMAND ----------
 
@@ -80,7 +88,7 @@ results_final_df = results_df_drop_cols.withColumnRenamed('constructorId','const
 
 # COMMAND ----------
 
-results_final_df.write.mode('overwrite').partitionBy('race_id').parquet('/mnt/dlcoursestorage/processed/results')
+results_final_df.write.mode('overwrite').partitionBy('race_id').parquet(f'{processed_folder_path}/results')
 
 # COMMAND ----------
 

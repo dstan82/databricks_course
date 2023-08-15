@@ -4,6 +4,14 @@
 
 # COMMAND ----------
 
+# MAGIC %run "../includes/configuration"
+
+# COMMAND ----------
+
+# MAGIC %run "../includes/common_functions"
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ### Step 1 - Read the CSV file using thwe spark dataframe reader
 
@@ -17,7 +25,7 @@ from pyspark.sql.types import *
 
 # COMMAND ----------
 
-display(dbutils.fs.ls('/mnt/dlcoursestorage/raw'))
+display(dbutils.fs.ls(raw_folder_path))
 
 # COMMAND ----------
 
@@ -34,7 +42,7 @@ circuits_schema = StructType(fields=[StructField('circuitId', IntegerType(),Fals
 
 # COMMAND ----------
 
-circuits_df = spark.read.csv('/mnt/dlcoursestorage/raw/circuits.csv',header=True,schema=circuits_schema)
+circuits_df = spark.read.csv(f'{raw_folder_path}/circuits.csv',header=True,schema=circuits_schema)
 
 # COMMAND ----------
 
@@ -98,9 +106,11 @@ circuits_renamed_df.display()
 # COMMAND ----------
 
 #from pyspark.sql.functions import current_timestamp
-from pyspark.sql.functions import *
+#from pyspark.sql.functions import *
 
-circuits_final_df = circuits_renamed_df.withColumn('ingestion_date',current_timestamp())
+#circuits_final_df = circuits_renamed_df.withColumn('ingestion_date',current_timestamp())
+
+circuits_final_df = add_ingestion_date(circuits_renamed_df)
 
 
 # COMMAND ----------
@@ -118,7 +128,7 @@ display(dbutils.fs.mounts())
 
 # COMMAND ----------
 
-circuits_final_df.write.mode('overwrite').parquet('/mnt/dlcoursestorage/processed/circuits')
+circuits_final_df.write.mode('overwrite').parquet(f'{processed_folder_path}/circuits')
 
 
 # COMMAND ----------
@@ -128,7 +138,7 @@ circuits_final_df.write.mode('overwrite').parquet('/mnt/dlcoursestorage/processe
 
 # COMMAND ----------
 
-df = spark.read.parquet('/mnt/dlcoursestorage/processed/circuits')
+df = spark.read.parquet(f'{processed_folder_path}/circuits')
 
 # COMMAND ----------
 

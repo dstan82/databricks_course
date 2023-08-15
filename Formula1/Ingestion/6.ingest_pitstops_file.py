@@ -4,13 +4,20 @@
 
 # COMMAND ----------
 
+# MAGIC %run "../includes/configuration"
+
+# COMMAND ----------
+
+# MAGIC %run "../includes/common_functions"
+
+# COMMAND ----------
+
 dbutils.fs.mounts()
 dbutils.fs.ls('/mnt/dlcoursestorage/raw')
 
 # COMMAND ----------
 
 from pyspark.sql.types import StructType, StructField, IntegerType, StringType,FloatType
-from pyspark.sql.functions import current_timestamp
 
 # COMMAND ----------
 
@@ -23,11 +30,9 @@ pit_stops_schema = StructType([StructField('driverId',IntegerType(),False), \
                              StructField('time',StringType(),True)
 ])
 
-
-
 # COMMAND ----------
 
-pitstops_df = spark.read.json('/mnt/dlcoursestorage/raw/pit_stops.json',multiLine=True,schema=pit_stops_schema)
+pitstops_df = spark.read.json(f'{raw_folder_path}/pit_stops.json',multiLine=True,schema=pit_stops_schema)
 
 # COMMAND ----------
 
@@ -37,11 +42,11 @@ pitstops_df.describe().display()
 
 # COMMAND ----------
 
-final_pit_stops_df = pitstops_df.withColumnRenamed('driverId','driver_id') \
+pit_stops_col_rename_df = pitstops_df.withColumnRenamed('driverId','driver_id') \
                       .withColumnRenamed('raceId','race_id') \
-                        .withColumn('ingestion_date',current_timestamp())
+                    
 
-
+final_pit_stops_df = add_ingestion_date(pit_stops_col_rename_df)
 
 # COMMAND ----------
 
@@ -49,13 +54,9 @@ final_pit_stops_df.display()
 
 # COMMAND ----------
 
-final_pit_stops_df.write.mode('overwrite').parquet('/mnt/dlcoursestorage/processed/pitstops')
+final_pit_stops_df.write.mode('overwrite').parquet(f'{processed_folder_path}/pitstops')
 
 # COMMAND ----------
 
 dbutils.fs.ls('/mnt/dlcoursestorage/processed/pitstops')
 spark.read.parquet('/mnt/dlcoursestorage/processed/pitstops').display()
-
-# COMMAND ----------
-
-
