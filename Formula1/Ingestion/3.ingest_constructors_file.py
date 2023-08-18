@@ -4,6 +4,13 @@
 
 # COMMAND ----------
 
+dbutils.widgets.text('p_data_source','') # define widget
+v_data_source = dbutils.widgets.get('p_data_source') # retrieve the parameter from the widget
+
+print(v_data_source)
+
+# COMMAND ----------
+
 # MAGIC %run "../includes/configuration"
 
 # COMMAND ----------
@@ -41,8 +48,11 @@ constructors_drop_url_df = constructor_df.drop('url')
 
 # COMMAND ----------
 
+from pyspark.sql.functions import lit
+
 constructor_col_rename_df = constructors_drop_url_df.withColumnRenamed('constructorId','constructor_id') \
                                                .withColumnRenamed('constructorRef','constructor_ref') \
+                                               .withColumn('data_source', lit(v_data_source))
                                             
 constructor_final_df = add_ingestion_date(constructor_col_rename_df)
 
@@ -54,3 +64,7 @@ constructor_final_df.write.mode('overwrite').parquet(f'{processed_folder_path}/c
 
 display(dbutils.fs.ls('/mnt/dlcoursestorage/processed/constructors'))
 spark.read.parquet('/mnt/dlcoursestorage/processed/constructors').display()
+
+# COMMAND ----------
+
+dbutils.notebook.exit('Success')

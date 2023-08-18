@@ -4,6 +4,13 @@
 
 # COMMAND ----------
 
+dbutils.widgets.text('p_data_source','') # define widget
+v_data_source = dbutils.widgets.get('p_data_source') # retrieve the parameter from the widget
+
+print(v_data_source)
+
+# COMMAND ----------
+
 # MAGIC %run "../includes/configuration"
 
 # COMMAND ----------
@@ -42,8 +49,11 @@ pitstops_df.describe().display()
 
 # COMMAND ----------
 
+from pyspark.sql.functions import lit
+
 pit_stops_col_rename_df = pitstops_df.withColumnRenamed('driverId','driver_id') \
                       .withColumnRenamed('raceId','race_id') \
+                        .withColumn('data_source',lit(v_data_source))
                     
 
 final_pit_stops_df = add_ingestion_date(pit_stops_col_rename_df)
@@ -60,3 +70,7 @@ final_pit_stops_df.write.mode('overwrite').parquet(f'{processed_folder_path}/pit
 
 dbutils.fs.ls('/mnt/dlcoursestorage/processed/pitstops')
 spark.read.parquet('/mnt/dlcoursestorage/processed/pitstops').display()
+
+# COMMAND ----------
+
+dbutils.notebook.exit('Success')

@@ -4,6 +4,13 @@
 
 # COMMAND ----------
 
+dbutils.widgets.text('p_data_source','') # define widget
+v_data_source = dbutils.widgets.get('p_data_source') # retrieve the parameter from the widget
+
+print(v_data_source)
+
+# COMMAND ----------
+
 # MAGIC %run "../includes/configuration"
 
 # COMMAND ----------
@@ -44,10 +51,13 @@ qualifying_df.describe().display()
 
 # COMMAND ----------
 
+from pyspark.sql.functions import lit
+
 col_rename_qualifying_df = qualifying_df.withColumnRenamed('qualifyId','qualify_id') \
                       .withColumnRenamed('raceId','race_id') \
                       .withColumnRenamed('driverId','driver_id') \
                       .withColumnRenamed('constructorId','constructor_id') \
+                      .withColumn('data_source', lit(v_data_source))
                           
 final_qualifying_df = add_ingestion_date(col_rename_qualifying_df)
 
@@ -63,3 +73,7 @@ final_qualifying_df.write.mode('overwrite').parquet(f'{processed_folder_path}/qu
 
 dbutils.fs.ls('/mnt/dlcoursestorage/processed/qualifying')
 spark.read.parquet('/mnt/dlcoursestorage/processed/qualifying').display()
+
+# COMMAND ----------
+
+dbutils.notebook.exit('Success')

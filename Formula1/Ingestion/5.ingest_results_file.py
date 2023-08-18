@@ -4,6 +4,13 @@
 
 # COMMAND ----------
 
+dbutils.widgets.text('p_data_source','') # define widget
+v_data_source = dbutils.widgets.get('p_data_source') # retrieve the parameter from the widget
+
+print(v_data_source)
+
+# COMMAND ----------
+
 # MAGIC %run "../includes/configuration"
 
 # COMMAND ----------
@@ -69,6 +76,8 @@ results_df_drop_cols = results_df.drop('statusId')
 
 # COMMAND ----------
 
+from pyspark.sql.functions import lit
+
 results_col_rename_df = results_df_drop_cols.withColumnRenamed('constructorId','constructor_id') \
                                           .withColumnRenamed('driverId','driver_id') \
                                           .withColumnRenamed('fastestLap','fastest_lap') \
@@ -78,6 +87,7 @@ results_col_rename_df = results_df_drop_cols.withColumnRenamed('constructorId','
                                           .withColumnRenamed('positionText','position_text') \
                                           .withColumnRenamed('raceId','race_id') \
                                           .withColumnRenamed('resultId','result_id') \
+                                          .withColumn('data_source', lit(v_data_source))
 
 results_final_df = add_ingestion_date(results_col_rename_df)                                          
 
@@ -94,3 +104,7 @@ results_final_df.write.mode('overwrite').partitionBy('race_id').parquet(f'{proce
 
 display(dbutils.fs.ls('/mnt/dlcoursestorage/processed/results/race_id=951'))
 spark.read.parquet('/mnt/dlcoursestorage/processed/results').display()
+
+# COMMAND ----------
+
+dbutils.notebook.exit('Success')

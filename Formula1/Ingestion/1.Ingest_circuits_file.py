@@ -4,6 +4,13 @@
 
 # COMMAND ----------
 
+dbutils.widgets.text('p_data_source','') # define widget
+v_data_source = dbutils.widgets.get('p_data_source') # retrieve the parameter from the widget
+
+print(v_data_source)
+
+# COMMAND ----------
+
 # MAGIC %run "../includes/configuration"
 
 # COMMAND ----------
@@ -88,11 +95,14 @@ circuits_selected_df.display()
 
 # COMMAND ----------
 
+from pyspark.sql.functions import lit
+
 circuits_renamed_df = circuits_selected_df.withColumnRenamed('circuitId','circuit_id')\
     .withColumnRenamed('circuitRef','circuit_ref')\
     .withColumnRenamed('lat','latitude')\
     .withColumnRenamed('lng','longitude')\
-    .withColumnRenamed('alt','altitude')
+    .withColumnRenamed('alt','altitude') \
+    .withColumn('data_source', lit(v_data_source))
 
 # COMMAND ----------
 
@@ -143,3 +153,7 @@ df = spark.read.parquet(f'{processed_folder_path}/circuits')
 # COMMAND ----------
 
 df.display()
+
+# COMMAND ----------
+
+dbutils.notebook.exit('Success')

@@ -4,6 +4,13 @@
 
 # COMMAND ----------
 
+dbutils.widgets.text('p_data_source','') # define widget
+v_data_source = dbutils.widgets.get('p_data_source') # retrieve the parameter from the widget
+
+print(v_data_source)
+
+# COMMAND ----------
+
 # MAGIC %run "../includes/configuration"
 
 # COMMAND ----------
@@ -40,8 +47,11 @@ lap_times_df.describe().display()
 
 # COMMAND ----------
 
+from pyspark.sql.functions import lit
+
 col_rename_lap_times_df = lap_times_df.withColumnRenamed('driverId','driver_id') \
                       .withColumnRenamed('raceId','race_id') \
+                      .withColumn('data_source', lit(v_data_source))
 
 final_lap_times_df = add_ingestion_date(col_rename_lap_times_df)
 
@@ -53,3 +63,7 @@ final_lap_times_df.write.mode('overwrite').parquet(f'{processed_folder_path}/lap
 
 dbutils.fs.ls('/mnt/dlcoursestorage/processed/lap_times')
 spark.read.parquet('/mnt/dlcoursestorage/processed/lap_times').display()
+
+# COMMAND ----------
+
+dbutils.notebook.exit('Success')
