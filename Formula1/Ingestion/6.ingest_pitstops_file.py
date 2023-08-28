@@ -11,6 +11,13 @@ print(v_data_source)
 
 # COMMAND ----------
 
+dbutils.widgets.text('p_file_date','2021-03-28') # define widget
+v_file_date = dbutils.widgets.get('p_file_date') # retrieve the parameter from the widget
+
+print(v_file_date)
+
+# COMMAND ----------
+
 # MAGIC %run "../includes/configuration"
 
 # COMMAND ----------
@@ -39,7 +46,7 @@ pit_stops_schema = StructType([StructField('driverId',IntegerType(),False), \
 
 # COMMAND ----------
 
-pitstops_df = spark.read.json(f'{raw_folder_path}/pit_stops.json',multiLine=True,schema=pit_stops_schema)
+pitstops_df = spark.read.json(f'{raw_folder_path}/{v_file_date}/pit_stops.json',multiLine=True,schema=pit_stops_schema)
 
 # COMMAND ----------
 
@@ -64,12 +71,22 @@ final_pit_stops_df.display()
 
 # COMMAND ----------
 
-final_pit_stops_df.write.mode('overwrite').parquet(f'{processed_folder_path}/pitstops')
+#final_pit_stops_df.write.mode('overwrite').format('parquet').saveAsTable('f1_processed.pitstops')
+
+#function in 'includes' notebook - expects: Schema, Table, DataFrame, Partitioning_Column
+incremental_load('f1_processed','pitstops',final_pit_stops_df,'race_id')
 
 # COMMAND ----------
 
 dbutils.fs.ls('/mnt/dlcoursestorage/processed/pitstops')
 spark.read.parquet('/mnt/dlcoursestorage/processed/pitstops').display()
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC SELECT race_id, count(*) FROM f1_processed.pitstops
+# MAGIC GROUP BY race_id
+# MAGIC ORDER BY race_id DESC
 
 # COMMAND ----------
 

@@ -1,4 +1,9 @@
 # Databricks notebook source
+dbutils.widgets.text('p_file_date','2021-03-21')
+v_file_date = dbutils.widgets.get('p_file_date')
+
+# COMMAND ----------
+
 # MAGIC %run "../includes/configuration"
 
 # COMMAND ----------
@@ -12,7 +17,10 @@ circuits_df = spark.read.parquet(f'{processed_folder_path}/circuits')
 drivers_df = spark.read.parquet(f'{processed_folder_path}/drivers')
 constructors_df = spark.read.parquet(f'{processed_folder_path}/constructors')
 races_df = spark.read.parquet(f'{processed_folder_path}/races')
-results_df = spark.read.parquet(f'{processed_folder_path}/results')
+
+#only create df with data corresponding to data parameter
+all_results_df = spark.read.parquet(f'{processed_folder_path}/results')
+results_df = all_results_df.filter(all_results_df.file_date == v_file_date)
 
 # COMMAND ----------
 
@@ -21,7 +29,7 @@ circuits_rename_df = circuits_df.withColumnRenamed('name','circuit_name').withCo
 drivers_rename_df = drivers_df.withColumnRenamed('name','driver_name').withColumnRenamed('number','driver_number').withColumnRenamed('nationality','driver_nationality')
 constructors_rename_df = constructors_df.withColumnRenamed('name','team')
 races_rename_df = races_df.withColumnRenamed('name','race_name').withColumnRenamed('race_timestamp','race_date')
-results_rename_df = results_df.withColumnRenamed('time','race_time')
+results_rename_df = results_df.withColumnRenamed('time','race_time').withColumnRenamed('race_id','results_race_id').withColumnRenamed('file_date','results_file_date')
 
 # COMMAND ----------
 
@@ -36,7 +44,7 @@ print(results_rename_df.count())
 # COMMAND ----------
 
 #joining all datasets
-presentation_df = results_rename_df.join(races_rename_df,'race_id','inner')\
+presentation_df = results_rename_df.join(races_rename_df,results_rename_df.results_race_id == races_rename_df.race_id ,'inner')\
                             .join(constructors_rename_df, 'constructor_id','inner')\
                             .join(drivers_rename_df, 'driver_id','inner')\
                             .join(circuits_rename_df, 'circuit_id','inner')
@@ -55,7 +63,10 @@ presentation_select_df = presentation_df.select(presentation_df.race_year\
                                                 ,presentation_df.grid\
                                                 ,presentation_df.fastest_lap\
                                                 ,presentation_df.race_time\
-                                                ,presentation_df.points)
+                                                ,presentation_df.points\
+                                                ,presentation_df.position\
+                                                ,presentation_df.results_file_date\
+                                                ,presentation_df.race_id).withColumnRenamed('results_file_date','file_date')
 presentation_select_df.display()
 print(presentation_select_df.count())
 
@@ -69,7 +80,9 @@ print(presentation_and_date_df.count())
 
 # COMMAND ----------
 
-presentation_and_date_df.write.mode('overwrite').parquet(f'{presentation_folder_path}/race_results')
+#presentation_and_date_df.write.mode('overwrite').format('parquet').saveAsTable('f1_presentation.race_results')
+
+incremental_load('f1_presentation','race_results',presentation_and_date_df,'race_id')
 
 # COMMAND ----------
 
@@ -79,8 +92,20 @@ display(dbutils.fs.ls(f'{presentation_folder_path}/race_results'))
 
 # COMMAND ----------
 
-#check the results against existing report
+# MAGIC %sql
+# MAGIC SELECT race_id , count(*)
+# MAGIC FROM f1_presentation.race_results
+# MAGIC GROUP BY race_id
+# MAGIC ORDER BY race_id DESC
+
+# COMMAND ----------
+
+#check the results against existing report (results page from the web)
 report = spark.read.parquet(f'{presentation_folder_path}/race_results')
 
 report.filter((report.race_year == 2020) & (report.circuit_location == 'Abu Dhabi')).orderBy(report.points.desc()).display()
 
+
+# COMMAND ----------
+
+dbutils.notebook.exit('Success')

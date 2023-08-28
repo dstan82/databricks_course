@@ -39,7 +39,3 @@ race_circuits_select_df = race_circuits_df.select(race_circuits_df.circuits_name
 # COMMAND ----------
 
 race_circuits_select_df.display()
-
-# COMMAND ----------
-
-

@@ -11,6 +11,13 @@ print(v_data_source)
 
 # COMMAND ----------
 
+dbutils.widgets.text('p_file_date','2021-03-28') # define widget
+v_file_date = dbutils.widgets.get('p_file_date') # retrieve the parameter from the widget
+
+print(v_file_date)
+
+# COMMAND ----------
+
 # MAGIC %run "../includes/configuration"
 
 # COMMAND ----------
@@ -37,7 +44,7 @@ lap_times_schema = StructType([StructField('raceId',IntegerType(),True), \
 
 # COMMAND ----------
 
-lap_times_df = spark.read.csv(f'{raw_folder_path}/lap_times/lap_times_split*.csv',schema=lap_times_schema)
+lap_times_df = spark.read.csv(f'{raw_folder_path}/{v_file_date}/lap_times/lap_times_split*.csv',schema=lap_times_schema)
 
 # COMMAND ----------
 
@@ -57,12 +64,22 @@ final_lap_times_df = add_ingestion_date(col_rename_lap_times_df)
 
 # COMMAND ----------
 
-final_lap_times_df.write.mode('overwrite').parquet(f'{processed_folder_path}/lap_times')
+#final_lap_times_df.write.mode('overwrite').format('parquet').saveAsTable('f1_processed.lap_times')
+
+#function in 'includes' notebook - expects: Schema, Table, DataFrame, Partitioning_Column
+incremental_load('f1_processed','lap_times',final_lap_times_df,'race_id')
 
 # COMMAND ----------
 
 dbutils.fs.ls('/mnt/dlcoursestorage/processed/lap_times')
 spark.read.parquet('/mnt/dlcoursestorage/processed/lap_times').display()
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC SELECT race_id, count(*) FROM f1_processed.lap_times
+# MAGIC GROUP BY race_id
+# MAGIC ORDER BY race_id DESC
 
 # COMMAND ----------
 

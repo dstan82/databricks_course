@@ -11,6 +11,13 @@ print(v_data_source)
 
 # COMMAND ----------
 
+dbutils.widgets.text('p_file_date','2021-03-21') # define widget (widget name, default value)
+v_file_date = dbutils.widgets.get('p_file_date') # retrieve the parameter from the widget and store it in a variable
+
+print(v_file_date)
+
+# COMMAND ----------
+
 # MAGIC %run "../includes/configuration"
 
 # COMMAND ----------
@@ -49,7 +56,7 @@ races_schema = StructType(fields=[StructField('raceId', IntegerType(),False),
 
 # COMMAND ----------
 
-raw_race_df = spark.read.csv(f'{raw_folder_path}/races.csv',header=True,schema=races_schema)
+raw_race_df = spark.read.csv(f'{raw_folder_path}/{v_file_date}/races.csv',header=True,schema=races_schema)
 
 # COMMAND ----------
 
@@ -66,7 +73,8 @@ race_col_renamed = raw_race_df.withColumnRenamed('raceId','race_id')\
                                    .withColumnRenamed('circuitId','circuit_id')\
                                    .withColumnRenamed('year','race_year')\
                                    .withColumn('race_timestamp', to_timestamp(concat(col('date'),lit(' '),col('time')),'yyyy-MM-dd HH:mm:ss')) \
-                                   .withColumn('data_source',lit(v_data_source))
+                                   .withColumn('data_source',lit(v_data_source)) \
+                                   .withColumn('file_date',lit(v_file_date))
 
 race_col_with_ingestion_date = add_ingestion_date(race_col_renamed)
 
@@ -78,7 +86,7 @@ races_final_df.printSchema()
 
 # COMMAND ----------
 
-races_final_df.write.mode('overwrite').parquet(f'{processed_folder_path}/races')
+races_final_df.write.mode('overwrite').format('parquet').saveAsTable('f1_processed.races')
 
 # COMMAND ----------
 

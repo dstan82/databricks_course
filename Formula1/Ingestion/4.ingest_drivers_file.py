@@ -16,6 +16,13 @@ print(v_data_source)
 
 # COMMAND ----------
 
+dbutils.widgets.text('p_file_date','2021-03-21') # define widget
+v_file_date = dbutils.widgets.get('p_file_date') # retrieve the parameter from the widget
+
+print(v_file_date)
+
+# COMMAND ----------
+
 # MAGIC %run "../includes/configuration"
 
 # COMMAND ----------
@@ -49,7 +56,7 @@ drivers_schema = StructType([StructField('code',StringType(), False),\
 
 # COMMAND ----------
 
-drivers_df = spark.read.json(f'{raw_folder_path}/drivers.json',schema=drivers_schema)
+drivers_df = spark.read.json(f'{raw_folder_path}/{v_file_date}/drivers.json',schema=drivers_schema)
 drivers_df.display()
 drivers_df.printSchema()
 
@@ -74,7 +81,8 @@ from pyspark.sql.functions import lit
 drivers_with_columns_df = drivers_df.withColumnRenamed('driverId', 'driver_id') \
                                 .withColumnRenamed('driverRef','driver_ref') \
                                 .withColumn('name',concat('name.forename',lit(' '),'name.surname'))\
-                                .withColumn('data_source', lit(v_data_source))
+                                .withColumn('data_source', lit(v_data_source)) \
+                                .withColumn('file_date', lit(v_file_date))
 drivers_with_ingestion_date = add_ingestion_date(drivers_with_columns_df)
 
 # COMMAND ----------
@@ -100,7 +108,7 @@ drivers_final_df = drivers_with_ingestion_date.drop(col('url'))
 
 # COMMAND ----------
 
-drivers_final_df.write.mode('overwrite').parquet(f'{processed_folder_path}/drivers')
+drivers_final_df.write.mode('overwrite').format('parquet').saveAsTable('f1_processed.drivers')
 
 # COMMAND ----------
 

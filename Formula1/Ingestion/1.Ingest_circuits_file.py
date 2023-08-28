@@ -11,6 +11,13 @@ print(v_data_source)
 
 # COMMAND ----------
 
+dbutils.widgets.text('p_file_date','2021-03-21') # define widget (widget name, default value)
+v_file_date = dbutils.widgets.get('p_file_date') # retrieve the parameter from the widget and store it in a variable
+
+print(v_file_date)
+
+# COMMAND ----------
+
 # MAGIC %run "../includes/configuration"
 
 # COMMAND ----------
@@ -49,7 +56,7 @@ circuits_schema = StructType(fields=[StructField('circuitId', IntegerType(),Fals
 
 # COMMAND ----------
 
-circuits_df = spark.read.csv(f'{raw_folder_path}/circuits.csv',header=True,schema=circuits_schema)
+circuits_df = spark.read.csv(f'{raw_folder_path}/{v_file_date}/circuits.csv',header=True,schema=circuits_schema)
 
 # COMMAND ----------
 
@@ -102,7 +109,8 @@ circuits_renamed_df = circuits_selected_df.withColumnRenamed('circuitId','circui
     .withColumnRenamed('lat','latitude')\
     .withColumnRenamed('lng','longitude')\
     .withColumnRenamed('alt','altitude') \
-    .withColumn('data_source', lit(v_data_source))
+    .withColumn('data_source', lit(v_data_source))\
+    .withColumn('file_date',lit(v_file_date))
 
 # COMMAND ----------
 
@@ -138,8 +146,14 @@ display(dbutils.fs.mounts())
 
 # COMMAND ----------
 
-circuits_final_df.write.mode('overwrite').parquet(f'{processed_folder_path}/circuits')
+circuits_final_df.write.mode('overwrite').format('parquet').saveAsTable('f1_processed.circuits')
 
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC SHOW DATABASES;
+# MAGIC SHOW TABLES in f1_processed;
+# MAGIC --SELECT * FROM f1_processed.circuits;
 
 # COMMAND ----------
 
@@ -153,6 +167,11 @@ df = spark.read.parquet(f'{processed_folder_path}/circuits')
 # COMMAND ----------
 
 df.display()
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC SELECT * FROM f1_processed.circuits
 
 # COMMAND ----------
 

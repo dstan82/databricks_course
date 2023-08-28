@@ -11,6 +11,7 @@
 raw_folder_path = '/mnt/dlcoursestorage/raw'
 processed_folder_path = '/mnt/dlcoursestorage/processed'
 presentation_folder_path = '/mnt/dlcoursestorage/presentation'
+demo_folder_path = '/mnt/dlcoursestorage/demo'
 
 # COMMAND ----------
 
